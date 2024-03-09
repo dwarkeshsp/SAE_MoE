@@ -1,0 +1,13 @@
+We've setup the hooks to grab the activations. Each expert's output in their native dimension is 14k. 2/8 experts activated in mixtral. Couple of questions.
+
+1. It seems like Mixtral adds the activations between tokens in a sequence, resulting in probably all experts being activated at some point. Is this fine? Maybe it lets us observe more sequence level macro-features? Does this make interpreting it later harder?
+2. Should we concat the activations to produce input to SAE of input 14k * 8 = 112k?
+3. If the 112k input makes sense, then how many hidden features should SAE have? The Arena tutorial had 8x input, so it would be 800k+ features. That seems high?
+4. Trenton, you were mentioning we could do DFS on features to deal with this many features. Should we bother with that here, or go brr on 800k features? If so, how does that work?
+5. What dataset size makes sense for an SAE of this size? Million tokens big enough?
+
+
+
+
+(layer, (batch, seq, d_model)) -> input_to_sae: 112k
+
