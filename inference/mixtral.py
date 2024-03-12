@@ -1,3 +1,4 @@
+# %%
 import torch
 import pandas as pd
 from tqdm import tqdm
@@ -6,12 +7,17 @@ from torch import nn
 import collections
 
 
-def load_dataset(filename, batch_size=32, dataset_relative_path="../dataset/"):
+def load_generated_dataset(
+    filename, batch_size=32, dataset_relative_path="../dataset/"
+):
     dataset = pd.read_csv(f"{dataset_relative_path}{filename}")
+    # print(dataset.head(10))
     dataset_list = dataset["text"].tolist()
     dataloader = torch.utils.data.DataLoader(dataset_list, batch_size=batch_size)
     return dataloader
 
+
+# load_generated_dataset("wikitext_44836.csv")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -26,8 +32,10 @@ double_quant_config = BitsAndBytesConfig(
 model = AutoModelForCausalLM.from_pretrained(
     "mistralai/Mixtral-8x7B-v0.1",
     quantization_config=double_quant_config,
-    # attn_implementation="flash_attention_2",
+    attn_implementation="flash_attention_2",
 )
+
+# %%
 
 activation = collections.defaultdict(list)
 
@@ -53,14 +61,23 @@ for expert_idx in range(8):
         getActivation(f"layer_15_expert_{expert_idx}_w_2")
     )
 
-for batch in tqdm(load_dataset("wikitext_44836.csv")):
+for batch in tqdm(load_generated_dataset("wikitext_44836.csv")):
     tokenizer = AutoTokenizer.from_pretrained("mistralai/Mixtral-8x7B-v0.1")
+    tokenizer.pad_token = tokenizer.eos_token
     batch_tokens = tokenizer(
-        batch, padding=True, truncation=True, return_tensors="pt"
+        batch,
+        padding="max_length",
+        truncation=True,
+        max_length=128,
+        return_tensors="pt",
     ).to(device)
 
-    generated_ids = model.generate(**batch_tokens, max_new_tokens=1, do_sample=False)
-    print(tokenizer.batch_decode(generated_ids)[0])
+    print(batch_tokens["input_ids"].shape)
 
-    print(batch)
+    generated_ids = model.generate(**batch_tokens, max_new_tokens=1, do_sample=False)
+    print(tokenizer.batch_decode(generated_ids))
+
+    # print(batch)
     break
+
+# %%
