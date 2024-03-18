@@ -32,6 +32,9 @@ class AutoEncoder(nn.Module):
         loss = l2_loss + l1_loss
         return loss, x_reconstruct, acts, l2_loss, l1_loss
 
+    def get_experts(self, feature):
+        
+
     def save(self):
         version = self.get_version()
         torch.save(self.state_dict(), SAVE_DIR / (str(version) + ".pt"))
